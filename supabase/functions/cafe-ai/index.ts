@@ -15,6 +15,12 @@ const MODELS = [
   "nvidia/nemotron-3-ultra-550b-a55b:free",
 ];
 
+// 한 번의 요청에 쓰는 전체 시간 상한. 화면의 "최대 1분" 안내와 맞춘다.
+const TOTAL_BUDGET_MS = 55_000;
+
+// 다른 모델로 넘어가도 소용없는 오류(키·권한 문제)
+class FatalError extends Error {}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -33,7 +39,13 @@ function clamp(value: unknown, max: number): string {
 }
 
 // ── 모델 호출 ─────────────────────────────────────────────
-async function callModel(model: string, system: string, user: string, key: string): Promise<string> {
+async function callModel(
+  model: string,
+  system: string,
+  user: string,
+  key: string,
+  timeoutMs = 40_000,
+): Promise<string> {
   // 추론형 모델은 생각하는 데 토큰을 먼저 쓰므로, 생각을 짧게 하고 답할 여유를 넉넉히 준다.
   const isReasoning = /nemotron/.test(model);
   const payload: Record<string, unknown> = {
@@ -56,7 +68,7 @@ async function callModel(model: string, system: string, user: string, key: strin
         "X-Title": "Golmok Cafe Dashboard",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(40_000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
   let res = await send();
@@ -65,6 +77,8 @@ async function callModel(model: string, system: string, user: string, key: strin
     await new Promise((r) => setTimeout(r, 2500));
     res = await send();
   }
+  // 키가 잘못됐거나 권한이 없으면 다른 모델로 넘어가도 소용이 없다.
+  if (res.status === 401 || res.status === 403) throw new FatalError("AI 사용 권한을 확인해 주세요.");
   if (!res.ok) throw new Error(`${model} 응답 오류 ${res.status}`);
   const data = await res.json();
   const text = data?.choices?.[0]?.message?.content;
@@ -93,17 +107,26 @@ async function askJson<T>(
   const order = MODELS.includes(preferred)
     ? [preferred, ...MODELS.filter((m) => m !== preferred)]
     : MODELS;
+  const deadline = Date.now() + TOTAL_BUDGET_MS;
   for (const model of order) {
+    const left = deadline - Date.now();
+    if (left < 5_000) {
+      errors.push("시간 초과");
+      break;
+    }
     try {
-      const text = await callModel(model, system, user, key);
+      const text = await callModel(model, system, user, key, Math.min(40_000, left));
       const result = validate(parseJson(text));
       if (result) return { model, result };
       errors.push(`${model} 형식 불일치`);
     } catch (e) {
+      if (e instanceof FatalError) throw e;
       errors.push(e instanceof Error ? e.message : String(e));
     }
   }
-  throw new Error(`모든 모델이 실패했어요: ${errors.join(" / ")}`);
+  // 어떤 모델이 왜 실패했는지는 서버 로그에만 남기고, 화면에는 쉬운 문장만 보낸다.
+  console.error("cafe-ai 모든 모델 실패:", errors.join(" / "));
+  throw new Error("지금 AI가 바쁩니다. 잠시 후 다시 눌러 주세요.");
 }
 
 // ── type별 처리 ───────────────────────────────────────────
@@ -124,7 +147,7 @@ function strings(value: unknown, count: number): string[] | null {
 
 async function handleReview(body: Record<string, unknown>, key: string) {
   const content = clamp(body.content, 1000);
-  if (!content) return json({ error: "content(리뷰 내용)가 필요해요." }, 400);
+  if (!content) return json({ error: "리뷰 내용이 필요합니다." }, 400);
   const rating = Number(body.rating);
   const ratingText = Number.isInteger(rating) && rating >= 1 && rating <= 5 ? `별점 ${rating}점 / 5점` : "별점 없음";
 
@@ -146,7 +169,7 @@ async function handleReview(body: Record<string, unknown>, key: string) {
 async function handlePromo(body: Record<string, unknown>, key: string) {
   const menu = clamp(body.menu, 80);
   const mood = clamp(body.mood, 80);
-  if (!menu) return json({ error: "menu(메뉴)가 필요해요." }, 400);
+  if (!menu) return json({ error: "메뉴를 선택해 주세요." }, 400);
 
   const system =
     "너는 동네 카페의 SNS 홍보 문구를 쓰는 카피라이터야. JSON으로만 답해. " +
@@ -177,7 +200,7 @@ async function handleBrief(body: Record<string, unknown>, key: string) {
   const lines = Object.keys(fields)
     .filter((k) => stats[k] !== undefined && stats[k] !== null && String(stats[k]) !== "")
     .map((k) => `${fields[k]}: ${clamp(Array.isArray(stats[k]) ? (stats[k] as unknown[]).join(", ") : stats[k], 200)}`);
-  if (lines.length === 0) return json({ error: "revenue, orders 등 오늘 숫자가 필요해요." }, 400);
+  if (lines.length === 0) return json({ error: "브리핑에 쓸 오늘 숫자가 필요합니다." }, 400);
 
   const system =
     "너는 동네 카페 사장님의 아침 브리핑 비서야. 받은 숫자만 사용해서 JSON으로만 답해. " +
@@ -199,13 +222,15 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "POST로 보내 주세요." }, 405);
 
   const key = Deno.env.get("OPENROUTER_API_KEY");
-  if (!key) return json({ error: "OPENROUTER_API_KEY가 Secrets에 설정되지 않았어요." }, 500);
+  if (!key) return json({ error: "AI 설정이 아직 끝나지 않았습니다. 관리자에게 알려 주세요." }, 500);
 
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const parsed = await req.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not object");
+    body = parsed;
   } catch {
-    return json({ error: "JSON 형식으로 보내 주세요." }, 400);
+    return json({ error: "요청 형식이 올바르지 않습니다." }, 400);
   }
 
   try {
@@ -213,10 +238,10 @@ Deno.serve(async (req: Request) => {
       case "review": return await handleReview(body, key);
       case "promo": return await handlePromo(body, key);
       case "brief": return await handleBrief(body, key);
-      default: return json({ error: "type은 review, promo, brief 중 하나여야 해요." }, 400);
+      default: return json({ error: "요청 종류(type)는 review, promo, brief 중 하나여야 합니다." }, 400);
     }
   } catch (e) {
     // 키나 요청 내용은 로그·응답에 남기지 않는다.
-    return json({ error: e instanceof Error ? e.message : "알 수 없는 오류" }, 502);
+    return json({ error: e instanceof Error ? e.message : "처리 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요." }, 502);
   }
 });

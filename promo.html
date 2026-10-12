@@ -5,64 +5,83 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>홍보 · 골목카페</title>
 <style>
+  /* 디자인 기준(모든 페이지 공통): 흰 바탕 + 1px 얇은 선 + 무채색 투명도 회색 + 파랑 하나. 그림자·이모지 없음. */
   :root {
-    --bg: #fbf6ef;
-    --panel: #ffffff;
-    --side: #4a2f1f;
-    --side-text: #f3e6d6;
-    --accent: #c97b3c;
-    --text: #2d1f16;
-    --muted: #8a7566;
-    --line: #e8dccd;
-    --font: "Pretendard", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
-    --danger: #b3402a;
+    --bg: #ffffff;
+    --bg-soft: rgba(0, 0, 0, 0.04);
+    --bg-tag: rgba(0, 0, 0, 0.06);
+    --line: rgba(0, 0, 0, 0.11);
+    --line-input: rgba(0, 0, 0, 0.18);
+    --text: rgba(0, 0, 0, 0.85);
+    --text-sub: rgba(0, 0, 0, 0.6);
+    --text-hint: rgba(0, 0, 0, 0.45);
+    --text-disabled: rgba(0, 0, 0, 0.25);
+    --brand: #1890ff;
+    --brand-dark: #096dd9;
+    --danger: #ff4d4f;
+    --danger-text: #f5222d;
+    --font: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --ease: cubic-bezier(0.31, 0.27, 0.15, 0.99);
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 28px;
+    padding: 24px 28px;
     font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
     color: var(--text);
     background: var(--bg);
   }
-  .wrap { max-width: 1000px; }
-  h1 { margin: 0 0 4px; font-size: 24px; }
-  .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
-  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
-  .box h2 { margin: 0 0 14px; font-size: 17px; }
-  #msg { min-height: 20px; margin: 0 0 12px; font-size: 14px; }
-  #msg.error { color: var(--danger); }
+  h1 { margin: 0 0 2px; font-size: 22px; font-weight: 600; line-height: 1.4; }
+  .sub { margin: 0 0 20px; color: var(--text-sub); }
+  .box { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+  .box h2 { margin: 0 0 14px; font-size: 16px; font-weight: 600; line-height: 1.4; }
 
-  form { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
-  .field { display: flex; flex-direction: column; font-size: 13px; color: var(--muted); gap: 6px; }
+  #msg { margin: 0 0 16px; padding: 12px 16px; border-radius: 4px; background: var(--bg-soft); }
+  #msg:empty { display: none; }
+  #msg.error { color: var(--danger-text); }
+
+  form { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; font-size: 13px; color: var(--text-sub); gap: 6px; }
   select {
     font: inherit; color: var(--text);
-    padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; width: 240px;
+    height: 40px; padding: 0 12px; width: 240px;
+    border: 1px solid var(--line-input); border-radius: 6px; background: var(--bg);
+    transition: border-color 0.1s var(--ease);
   }
-  select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  select:focus { outline: none; border-color: var(--brand); }
 
+  /* 분위기 선택: 선 있는 칩, 선택하면 파랑 테두리와 글자 */
   .moods { display: flex; gap: 8px; }
   .moods label { cursor: pointer; }
   .moods input { position: absolute; opacity: 0; pointer-events: none; }
   .moods span {
-    display: inline-block; padding: 9px 16px; border: 1px solid var(--line); border-radius: 999px;
-    background: #fff; color: var(--text); font-size: 15px;
+    display: inline-block; height: 40px; line-height: 38px; padding: 0 16px;
+    border: 1px solid var(--line-input); border-radius: 6px;
+    background: var(--bg); color: var(--text); font-size: 14px;
+    transition: border-color 0.1s var(--ease), background 0.1s var(--ease);
   }
-  .moods input:checked + span { background: var(--side); border-color: var(--side); color: #fff; font-weight: 700; }
-  .moods input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .moods label:hover span { background: var(--bg-soft); }
+  .moods input:checked + span { border-color: var(--brand); color: var(--brand); font-weight: 600; }
+  .moods input:focus-visible + span { border-color: var(--brand); }
 
   button {
-    font: inherit; font-weight: 700; cursor: pointer;
-    padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    height: 40px; padding: 0 20px; border: 0; border-radius: 6px;
+    background: var(--brand); color: #fff;
+    transition: background 0.1s var(--ease);
   }
-  button.ghost { background: #fff; color: var(--text); border: 1px solid var(--line); padding: 7px 14px; }
-  button:disabled { opacity: .6; cursor: default; }
+  button:hover { background: var(--brand-dark); }
+  button.ghost { background: var(--bg); color: var(--text); border: 1px solid var(--line-input); height: 36px; padding: 0 14px; }
+  button.ghost:hover { background: var(--bg-soft); }
+  button:disabled { background: var(--bg-tag); color: var(--text-disabled); border-color: transparent; cursor: default; }
 
-  .caption { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 12px; }
-  .caption .no { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
-  .caption p { margin: 0 0 12px; font-size: 16px; line-height: 1.7; white-space: pre-wrap; }
-  .model { color: var(--muted); font-size: 12px; margin-top: 4px; }
-  .empty { color: var(--muted); padding: 18px 8px; }
+  .caption { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; }
+  .caption .no { color: var(--text-hint); font-size: 13px; margin-bottom: 4px; }
+  .caption p { margin: 0 0 12px; font-size: 15px; white-space: pre-wrap; }
+  .model { color: var(--text-hint); font-size: 12px; margin-top: 4px; }
+  .empty { color: var(--text-sub); padding: 16px 8px; }
 
   @media (max-width: 600px) {
     body { padding: 16px; }
@@ -72,31 +91,29 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>홍보</h1>
-  <p class="sub">메뉴와 분위기를 고르면 SNS에 올릴 홍보 문구 3개를 만들어 줍니다.</p>
-  <p id="msg"></p>
+<h1>홍보</h1>
+<p class="sub">메뉴와 분위기를 고르면 SNS에 올릴 홍보 문구 3개를 만들어 줍니다.</p>
+<p id="msg"></p>
 
-  <div class="box">
-    <h2>문구 만들기</h2>
-    <form id="promo-form">
-      <label class="field">메뉴
-        <select id="f-menu" required></select>
-      </label>
-      <div class="field">분위기
-        <div class="moods" id="moods">
-          <label><input type="radio" name="mood" value="따뜻하게" checked><span>따뜻하게</span></label>
-          <label><input type="radio" name="mood" value="재미있게"><span>재미있게</span></label>
-          <label><input type="radio" name="mood" value="짧게"><span>짧게</span></label>
-        </div>
+<div class="box">
+  <h2>문구 만들기</h2>
+  <form id="promo-form">
+    <label class="field">메뉴
+      <select id="f-menu" required></select>
+    </label>
+    <div class="field">분위기
+      <div class="moods" id="moods">
+        <label><input type="radio" name="mood" value="따뜻하게" checked><span>따뜻하게</span></label>
+        <label><input type="radio" name="mood" value="재미있게"><span>재미있게</span></label>
+        <label><input type="radio" name="mood" value="짧게"><span>짧게</span></label>
       </div>
-      <button type="submit" id="go-btn">문구 만들기</button>
-    </form>
-  </div>
-
-  <div id="result"></div>
-  <div id="hint" class="empty">메뉴와 분위기를 고르고 "문구 만들기"를 눌러 보세요.</div>
+    </div>
+    <button type="submit" id="go-btn">문구 만들기</button>
+  </form>
 </div>
+
+<div id="result"></div>
+<div id="hint" class="empty">메뉴와 분위기를 고른 뒤 "문구 만들기"를 눌러 주세요.</div>
 
 <script>
   var SUPABASE_URL = "https://aygdylhsmzevjrybnozf.supabase.co";
@@ -121,6 +138,19 @@
   var hintEl = document.getElementById("hint");
   var msgEl = document.getElementById("msg");
   var goBtn = document.getElementById("go-btn");
+
+  // 서버·네트워크 오류를 사장님이 알아들을 수 있는 문장으로 바꾼다. (5개 페이지 공통)
+  function friendly(err, fallback) {
+    var m = (err && err.message) || "";
+    if (err instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(m)) {
+      return "인터넷 연결을 확인해 주세요.";
+    }
+    if (/429|모든 모델|바쁩/.test(m)) {
+      return "AI가 지금 바쁩니다. 잠시 후 다시 눌러 주세요.";
+    }
+    if (/[가-힣]/.test(m) && m.length < 80 && !/[{}]|https?:|PGRST|JWT/.test(m)) { return m; }
+    return fallback;
+  }
 
   function headers() {
     return {
@@ -164,7 +194,7 @@
       var ok = false;
       try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
       document.body.removeChild(ta);
-      return ok ? Promise.resolve() : Promise.reject(new Error("복사하지 못했어요."));
+      return ok ? Promise.resolve() : Promise.reject(new Error("복사하지 못했습니다. 문구를 직접 선택해서 복사해 주세요."));
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       return navigator.clipboard.writeText(text).catch(fallback);
@@ -179,10 +209,10 @@
       btn.addEventListener("click", function () {
         copyText(text).then(function () {
           say("");
-          btn.textContent = "복사됨 ✓";
+          btn.textContent = "복사됨";
           setTimeout(function () { btn.textContent = "복사"; }, 1500);
         }).catch(function (err) {
-          say(err.message, true);
+          say(friendly(err, "복사하지 못했습니다. 문구를 직접 선택해서 복사해 주세요."), true);
         });
       });
       resultEl.appendChild(el("div", { className: "caption" }, [
@@ -198,18 +228,20 @@
     return fetch(SUPABASE_URL + "/rest/v1/menus?select=id,name&order=id.asc", { headers: headers() })
       .then(readJson)
       .then(function (list) {
+        list = list || [];
         menuSel.innerHTML = "";
         list.forEach(function (m) {
           menuSel.appendChild(el("option", { value: m.name, textContent: m.name }));
         });
         if (!list.length) {
-          menuSel.appendChild(el("option", { value: "", textContent: "등록된 메뉴가 없어요" }));
+          menuSel.appendChild(el("option", { value: "", textContent: "등록된 메뉴가 없습니다" }));
           goBtn.disabled = true;
           say("먼저 '메뉴' 화면에서 메뉴를 등록해 주세요.", true);
         }
       })
       .catch(function (err) {
-        say("메뉴를 불러오지 못했습니다: " + err.message, true);
+        say("메뉴 목록을 불러오지 못했습니다. " +
+          friendly(err, "화면을 새로고침한 뒤 다시 시도해 주세요."), true);
         goBtn.disabled = true;
       });
   }
@@ -218,11 +250,11 @@
     e.preventDefault();
     var menu = menuSel.value;
     var mood = document.querySelector('input[name="mood"]:checked').value;
-    if (!menu) { say("메뉴를 골라 주세요.", true); return; }
+    if (!menu) { say("메뉴를 선택해 주세요.", true); return; }
 
     goBtn.disabled = true;
-    goBtn.textContent = "만드는 중…";
-    say("AI가 문구를 쓰고 있어요. 최대 1분쯤 걸릴 수 있어요.");
+    goBtn.textContent = "만드는 중";
+    say("AI가 문구를 쓰고 있습니다. 최대 1분 정도 걸릴 수 있습니다.");
     hintEl.style.display = "none";
 
     fetch(AI_URL, {
@@ -230,13 +262,13 @@
       headers: headers(),
       body: JSON.stringify({ type: "promo", menu: menu, mood: MOOD_TEXT[mood], model: selectedModel() })
     }).then(readJson).then(function (ai) {
-      if (!Array.isArray(ai.captions) || ai.captions.length < 3) {
-        throw new Error("AI 응답 형식이 올바르지 않아요.");
+      if (!ai || !Array.isArray(ai.captions) || ai.captions.length < 3) {
+        throw new Error("AI 답변을 읽지 못했습니다.");
       }
       renderCaptions(ai.captions, ai.model);
       say("");
     }).catch(function (err) {
-      say("문구를 만들지 못했습니다: " + err.message, true);
+      say("문구를 만들지 못했습니다. " + friendly(err, "잠시 후 다시 눌러 주세요."), true);
       if (!resultEl.children.length) { hintEl.style.display = ""; }
     }).then(function () {
       goBtn.disabled = false;

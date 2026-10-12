@@ -5,63 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>매출 · 골목카페</title>
 <style>
+  /* 디자인 기준(모든 페이지 공통): 흰 바탕 + 1px 얇은 선 + 무채색 투명도 회색 + 파랑 하나. 그림자·이모지 없음. */
   :root {
-    --bg: #fbf6ef;
-    --panel: #ffffff;
-    --side: #4a2f1f;
-    --side-text: #f3e6d6;
-    --accent: #c97b3c;
-    --text: #2d1f16;
-    --muted: #8a7566;
-    --line: #e8dccd;
-    --font: "Pretendard", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
-    --danger: #b3402a;
+    --bg: #ffffff;
+    --bg-soft: rgba(0, 0, 0, 0.04);
+    --bg-tag: rgba(0, 0, 0, 0.06);
+    --line: rgba(0, 0, 0, 0.11);
+    --line-input: rgba(0, 0, 0, 0.18);
+    --text: rgba(0, 0, 0, 0.85);
+    --text-sub: rgba(0, 0, 0, 0.6);
+    --text-hint: rgba(0, 0, 0, 0.45);
+    --text-disabled: rgba(0, 0, 0, 0.25);
+    --brand: #1890ff;
+    --brand-dark: #096dd9;
+    --danger: #ff4d4f;
+    --danger-text: #f5222d;
+    --font: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --ease: cubic-bezier(0.31, 0.27, 0.15, 0.99);
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 28px;
+    padding: 24px 28px;
     font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
     color: var(--text);
     background: var(--bg);
   }
-  .wrap { max-width: 1000px; }
-  h1 { margin: 0 0 4px; font-size: 24px; }
-  .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
-  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
-  .box h2 { margin: 0 0 14px; font-size: 17px; }
+  h1 { margin: 0 0 2px; font-size: 22px; font-weight: 600; line-height: 1.4; }
+  .sub { margin: 0 0 20px; color: var(--text-sub); }
+  .box { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+  .box h2 { margin: 0 0 14px; font-size: 16px; font-weight: 600; line-height: 1.4; }
 
-  form { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
-  label { display: flex; flex-direction: column; font-size: 13px; color: var(--muted); gap: 4px; }
+  #msg { margin: 0 0 16px; padding: 12px 16px; border-radius: 4px; background: var(--bg-soft); }
+  #msg:empty { display: none; }
+  #msg.error { color: var(--danger-text); }
+
+  form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  label { display: flex; flex-direction: column; font-size: 13px; color: var(--text-sub); gap: 4px; }
   input, select {
     font: inherit; color: var(--text);
-    padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    height: 40px; padding: 0 12px;
+    border: 1px solid var(--line-input); border-radius: 6px; background: var(--bg);
+    transition: border-color 0.1s var(--ease);
   }
-  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  #f-menu { width: 260px; }
+  input:focus, select:focus { outline: none; border-color: var(--brand); }
+  #f-menu { width: 280px; }
   #f-qty { width: 100px; }
   button {
-    font: inherit; font-weight: 700; cursor: pointer;
-    padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    height: 40px; padding: 0 20px; border: 0; border-radius: 6px;
+    background: var(--brand); color: #fff;
+    transition: background 0.1s var(--ease);
   }
-  button:disabled { opacity: .6; cursor: default; }
-  .preview { align-self: center; color: var(--muted); font-size: 14px; }
-  .preview b { color: var(--text); }
+  button:hover { background: var(--brand-dark); }
+  button:disabled { background: var(--bg-tag); color: var(--text-disabled); cursor: default; }
+  .preview { align-self: center; color: var(--text-sub); }
+  .preview b { color: var(--text); font-weight: 600; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
-  .card .label { color: var(--muted); font-size: 14px; }
-  .card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; }
+  .card .label { color: var(--text-sub); font-size: 14px; }
+  .card .value { font-size: 26px; font-weight: 600; line-height: 1.4; margin-top: 4px; }
 
   table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 15px; }
-  th { color: var(--muted); font-size: 13px; font-weight: 500; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { color: var(--text-sub); font-size: 13px; font-weight: 400; }
   th.num, td.num { text-align: right; }
-  .gone { color: var(--muted); }
-  .empty { color: var(--muted); padding: 18px 8px; }
-  #msg { min-height: 20px; margin: 0 0 12px; font-size: 14px; }
-  #msg.error { color: var(--danger); }
-  #stock-note { color: var(--danger); font-size: 13px; }
+  .gone { color: var(--text-hint); }
+  .empty { color: var(--text-sub); padding: 16px 8px; }
 
   @media (max-width: 600px) {
     body { padding: 16px; }
@@ -71,47 +84,49 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>매출</h1>
-  <p class="sub" id="today-label"></p>
-  <p id="msg"></p>
+<h1>매출</h1>
+<p class="sub" id="today-label"></p>
+<p id="msg"></p>
 
-  <div class="box">
-    <h2>판매 입력</h2>
-    <form id="sale-form">
-      <label>메뉴
-        <select id="f-menu" required></select>
-      </label>
-      <label>수량
-        <input id="f-qty" type="number" min="1" step="1" value="1" required>
-      </label>
-      <span class="preview" id="preview"></span>
-      <button type="submit" id="sale-btn">판매 입력</button>
-    </form>
-    <div id="no-menu" class="empty" style="display:none">판매할 메뉴가 없습니다. 먼저 '메뉴' 화면에서 메뉴와 재고를 등록해 주세요.</div>
-  </div>
+<div class="box">
+  <h2>판매 입력</h2>
+  <form id="sale-form">
+    <label>메뉴
+      <select id="f-menu" required></select>
+    </label>
+    <label>수량
+      <input id="f-qty" type="number" min="1" step="1" value="1" required>
+    </label>
+    <span class="preview" id="preview"></span>
+    <button type="submit" id="sale-btn">판매 입력</button>
+  </form>
+  <div id="no-menu" class="empty" style="display:none">판매할 메뉴가 없습니다. 먼저 '메뉴' 화면에서 메뉴와 재고를 등록해 주세요.</div>
+</div>
 
-  <div class="cards">
-    <div class="card"><div class="label">오늘 판매 건수</div><div class="value" id="sum-count">0건</div></div>
-    <div class="card"><div class="label">오늘 판매 수량</div><div class="value" id="sum-qty">0개</div></div>
-    <div class="card"><div class="label">오늘 매출 합계</div><div class="value" id="sum-amount">₩0</div></div>
-  </div>
+<div class="cards">
+  <div class="card"><div class="label">오늘 판매 건수</div><div class="value" id="sum-count">0건</div></div>
+  <div class="card"><div class="label">오늘 판매 수량</div><div class="value" id="sum-qty">0개</div></div>
+  <div class="card"><div class="label">오늘 매출 합계</div><div class="value" id="sum-amount">₩0</div></div>
+</div>
 
-  <div class="box">
-    <h2>오늘 판매 목록</h2>
-    <table>
-      <thead>
-        <tr><th>시각</th><th>메뉴</th><th class="num">수량</th><th class="num">금액</th></tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div id="empty" class="empty" style="display:none">오늘 판매 내역이 아직 없습니다.</div>
-  </div>
+<div class="box">
+  <h2>오늘 판매 목록</h2>
+  <table>
+    <thead>
+      <tr><th>시각</th><th>메뉴</th><th class="num">수량</th><th class="num">금액</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" class="empty" style="display:none">오늘 판매 내역이 아직 없습니다.</div>
 </div>
 
 <script>
   var SUPABASE_URL = "https://aygdylhsmzevjrybnozf.supabase.co";
   var SUPABASE_KEY = "sb_publishable_EHyev6fOsOQbrASk6X79vw_uJh4dKcY";
+
+  // "오늘"은 한국 시간(UTC+9) 기준이다. 가게 컴퓨터의 시간대와 상관없이 홈 화면과 같은 숫자가 나온다.
+  var KST_OFFSET = 9 * 60 * 60 * 1000;
+  var DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
 
   var menuSel = document.getElementById("f-menu");
   var qtyEl = document.getElementById("f-qty");
@@ -119,21 +134,35 @@
   var msgEl = document.getElementById("msg");
   var menus = [];
 
-  function api(path, options) {
-    options = options || {};
-    options.headers = Object.assign({
+  // 서버·네트워크 오류를 사장님이 알아들을 수 있는 문장으로 바꾼다. (5개 페이지 공통)
+  function friendly(err, fallback) {
+    var m = (err && err.message) || "";
+    if (err instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(m)) {
+      return "인터넷 연결을 확인해 주세요.";
+    }
+    if (/429|모든 모델|바쁩/.test(m)) {
+      return "AI가 지금 바쁩니다. 잠시 후 다시 눌러 주세요.";
+    }
+    if (/[가-힣]/.test(m) && m.length < 80 && !/[{}]|https?:|PGRST|JWT/.test(m)) { return m; }
+    return fallback;
+  }
+
+  function headers() {
+    return {
       "apikey": SUPABASE_KEY,
       "Authorization": "Bearer " + SUPABASE_KEY,
       "Content-Type": "application/json"
-    }, options.headers || {});
+    };
+  }
+
+  function api(path, options) {
+    options = options || {};
+    options.headers = Object.assign(headers(), options.headers || {});
     return fetch(SUPABASE_URL + "/rest/v1/" + path, options).then(function (res) {
       return res.text().then(function (t) {
         var data = null;
         try { data = t ? JSON.parse(t) : null; } catch (e) { data = null; }
-        if (!res.ok) {
-          // 서버가 보낸 한글 안내(예: 재고 부족)가 있으면 그대로 보여 준다.
-          throw new Error((data && data.message) || t || res.statusText);
-        }
+        if (!res.ok) { throw new Error((data && (data.error || data.message)) || t || res.statusText); }
         return data;
       });
     });
@@ -153,10 +182,20 @@
     return e;
   }
 
-  function startOfToday() {
-    var d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
+  // 시각(ms) → 한국 시간 기준 날짜 "YYYY-MM-DD"
+  function kstDayKey(ms) {
+    return new Date(ms + KST_OFFSET).toISOString().slice(0, 10);
+  }
+
+  // 오늘 0시(한국 시간)가 실제로 몇 시인지
+  function startOfTodayISO() {
+    var start = Date.parse(kstDayKey(Date.now()) + "T00:00:00Z") - KST_OFFSET;
+    return new Date(start).toISOString();
+  }
+
+  // 시각 문자열 → 한국 시간 "HH:MM"
+  function kstTime(iso) {
+    return new Date(Date.parse(iso) + KST_OFFSET).toISOString().slice(11, 16);
   }
 
   function selectedMenu() {
@@ -166,9 +205,10 @@
   function updatePreview() {
     var m = selectedMenu();
     var q = Number(qtyEl.value);
-    if (!m) { previewEl.textContent = ""; return; }
-    qtyEl.max = m.stock;
     previewEl.innerHTML = "";
+    qtyEl.setCustomValidity("");
+    if (!m) { return; }
+    qtyEl.max = m.stock;
     if (Number.isInteger(q) && q > 0) {
       previewEl.appendChild(document.createTextNode("금액 "));
       previewEl.appendChild(el("b", { textContent: won(m.price * q) }));
@@ -176,24 +216,36 @@
     previewEl.appendChild(document.createTextNode(" · 남은 재고 " + m.stock + "개"));
   }
 
+  // 브라우저 기본 안내("값은 4 이하여야 합니다") 대신 알기 쉬운 문구를 보여 준다.
+  qtyEl.addEventListener("invalid", function () {
+    var m = selectedMenu();
+    if (qtyEl.validity.rangeOverflow && m) {
+      qtyEl.setCustomValidity("남은 재고(" + m.stock + "개)보다 많이 팔 수 없습니다.");
+    } else if (qtyEl.validity.rangeUnderflow || qtyEl.validity.valueMissing) {
+      qtyEl.setCustomValidity("수량은 1개 이상 입력해 주세요.");
+    } else {
+      qtyEl.setCustomValidity("수량은 소수점 없이 숫자로 입력해 주세요.");
+    }
+  });
+
   function loadMenus() {
     var keep = menuSel.value;
     return api("menus?select=id,name,price,stock&order=id.asc").then(function (list) {
-      menus = list;
+      menus = list || [];
       menuSel.innerHTML = "";
-      list.forEach(function (m) {
-        var label = m.name + " · " + won(m.price) + (m.stock <= 0 ? " (품절)" : " · 재고 " + m.stock);
+      menus.forEach(function (m) {
+        var label = m.name + " · " + won(m.price) + (m.stock <= 0 ? " (품절)" : " · 재고 " + m.stock + "개");
         var opt = el("option", { value: m.id, textContent: label });
         if (m.stock <= 0) { opt.disabled = true; }
         menuSel.appendChild(opt);
       });
-      var hasMenu = list.length > 0;
+      var hasMenu = menus.length > 0;
       document.getElementById("no-menu").style.display = hasMenu ? "none" : "block";
       document.getElementById("sale-form").style.display = hasMenu ? "flex" : "none";
-      if (keep && list.some(function (m) { return String(m.id) === keep && m.stock > 0; })) {
+      if (keep && menus.some(function (m) { return String(m.id) === keep && m.stock > 0; })) {
         menuSel.value = keep;
       } else {
-        var first = list.filter(function (m) { return m.stock > 0; })[0];
+        var first = menus.filter(function (m) { return m.stock > 0; })[0];
         if (first) { menuSel.value = first.id; }
       }
       updatePreview();
@@ -202,20 +254,19 @@
 
   function loadToday() {
     var path = "sales?select=id,quantity,amount,sold_at,menus(name)" +
-               "&sold_at=gte." + encodeURIComponent(startOfToday()) + "&order=sold_at.desc";
+               "&sold_at=gte." + encodeURIComponent(startOfTodayISO()) + "&order=sold_at.desc";
     return api(path).then(function (list) {
+      list = list || [];
       var rows = document.getElementById("rows");
       rows.innerHTML = "";
       var count = 0, qty = 0, amount = 0;
       list.forEach(function (s) {
         count += 1; qty += s.quantity; amount += s.amount;
-        var t = new Date(s.sold_at);
-        var time = ("0" + t.getHours()).slice(-2) + ":" + ("0" + t.getMinutes()).slice(-2);
         var nameCell = s.menus && s.menus.name
           ? el("td", { textContent: s.menus.name })
           : el("td", { className: "gone", textContent: "(삭제된 메뉴)" });
         rows.appendChild(el("tr", {}, [
-          el("td", { textContent: time }),
+          el("td", { textContent: kstTime(s.sold_at) }),
           nameCell,
           el("td", { className: "num", textContent: s.quantity + "개" }),
           el("td", { className: "num", textContent: won(s.amount) })
@@ -230,7 +281,8 @@
 
   function refresh() {
     return Promise.all([loadMenus(), loadToday()]).catch(function (err) {
-      say("불러오지 못했습니다: " + err.message, true);
+      say("매출 정보를 불러오지 못했습니다. " +
+        friendly(err, "화면을 새로고침한 뒤 다시 시도해 주세요."), true);
     });
   }
 
@@ -241,8 +293,8 @@
     e.preventDefault();
     var m = selectedMenu();
     var q = Number(qtyEl.value);
-    if (!m) { say("메뉴를 골라 주세요.", true); return; }
-    if (!Number.isInteger(q) || q < 1) { say("수량은 1 이상의 정수로 입력해 주세요.", true); return; }
+    if (!m) { say("메뉴를 선택해 주세요.", true); return; }
+    if (!Number.isInteger(q) || q < 1) { say("수량은 1개 이상, 소수점 없이 입력해 주세요.", true); return; }
     if (q > m.stock) { say("재고가 부족합니다. (남은 재고 " + m.stock + "개)", true); return; }
 
     var btn = document.getElementById("sale-btn");
@@ -256,17 +308,18 @@
       qtyEl.value = 1;
       return refresh();
     }).catch(function (err) {
-      say("판매를 입력하지 못했습니다: " + err.message, true);
+      say("판매를 입력하지 못했습니다. " + friendly(err, "잠시 후 다시 시도해 주세요."), true);
       return refresh();
     }).then(function () {
       btn.disabled = false;
     });
   });
 
-  var days = ["일", "월", "화", "수", "목", "금", "토"];
-  var now = new Date();
+  var todayKey = kstDayKey(Date.now());
+  var td = new Date(Date.parse(todayKey + "T00:00:00Z"));
   document.getElementById("today-label").textContent =
-    now.getFullYear() + "년 " + (now.getMonth() + 1) + "월 " + now.getDate() + "일 (" + days[now.getDay()] + ") 오늘 장사";
+    td.getUTCFullYear() + "년 " + (td.getUTCMonth() + 1) + "월 " + td.getUTCDate() +
+    "일 (" + DAY_NAMES[td.getUTCDay()] + ") 오늘 장사 · 한국 시간 기준";
 
   refresh();
 </script>

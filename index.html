@@ -5,100 +5,128 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>골목카페 운영 대시보드</title>
 <style>
+  /* 디자인 기준: 흰 바탕 + 1px 얇은 선 + 무채색 투명도 회색 + 파랑 하나. 그림자·그라디언트·이모지 없음. */
   :root {
-    --bg: #fbf6ef;
-    --panel: #ffffff;
-    --side: #4a2f1f;
-    --side-text: #f3e6d6;
-    --accent: #c97b3c;
-    --text: #2d1f16;
-    --muted: #8a7566;
-    --line: #e8dccd;
-    --font: "Pretendard", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
+    --bg: #ffffff;
+    --bg-side: rgba(0, 0, 0, 0.02);
+    --bg-soft: rgba(0, 0, 0, 0.04);
+    --bg-tag: rgba(0, 0, 0, 0.06);
+    --line: rgba(0, 0, 0, 0.11);
+    --line-input: rgba(0, 0, 0, 0.18);
+    --text: rgba(0, 0, 0, 0.85);
+    --text-sub: rgba(0, 0, 0, 0.6);
+    --text-hint: rgba(0, 0, 0, 0.45);
+    --text-disabled: rgba(0, 0, 0, 0.25);
+    --brand: #1890ff;
+    --brand-dark: #096dd9;
+    --danger: #ff4d4f;
+    --danger-text: #f5222d;
+    --bar: #bfbfbf;
+    --font: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --ease: cubic-bezier(0.31, 0.27, 0.15, 0.99);
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body {
     display: flex;
     font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
     color: var(--text);
     background: var(--bg);
   }
+
+  /* 왼쪽 메뉴: 232px 고정, 배경 2% 회색, 오른쪽 1px 선 */
   nav {
-    width: 200px;
+    width: 232px;
     flex-shrink: 0;
-    background: var(--side);
-    color: var(--side-text);
+    background: var(--bg-side);
+    border-right: 1px solid var(--line);
     display: flex;
     flex-direction: column;
-    padding: 20px 12px;
+    padding: 16px 12px;
   }
-  .brand { font-size: 18px; font-weight: 700; padding: 4px 12px 20px; }
+  .brand { font-size: 18px; font-weight: 600; line-height: 1.4; padding: 8px 12px 20px; }
   nav a {
     display: block;
-    padding: 12px 14px;
-    margin-bottom: 4px;
-    border-radius: 8px;
-    color: var(--side-text);
+    height: 40px;
+    line-height: 40px;
+    padding: 0 12px;
+    margin-bottom: 2px;
+    border-radius: 6px;
+    color: var(--text);
     text-decoration: none;
-    font-size: 16px;
+    font-size: 15px;
+    transition: background 0.1s var(--ease);
   }
-  nav a:hover { background: rgba(255,255,255,0.1); }
-  nav a.active { background: var(--accent); color: #fff; font-weight: 700; }
-  .ai-model { margin-top: auto; padding: 14px 12px 4px; border-top: 1px solid rgba(255,255,255,0.15); }
-  .ai-model label { display: block; font-size: 12px; color: var(--side-text); opacity: .75; margin-bottom: 6px; }
+  nav a:hover { background: var(--bg-soft); }
+  nav a.active { background: var(--bg-tag); color: var(--brand); font-weight: 600; }
+  nav a:focus-visible { outline: 1px solid var(--brand); outline-offset: -1px; }
+
+  .ai-model { margin-top: auto; padding: 14px 12px 4px; border-top: 1px solid var(--line); }
+  .ai-model label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 6px; }
   .ai-model select {
-    width: 100%; font: inherit; font-size: 13px; color: var(--text);
-    padding: 8px; border: 0; border-radius: 6px; background: #fff;
+    width: 100%; height: 36px; font: inherit; font-size: 13px; color: var(--text);
+    padding: 0 8px; border: 1px solid var(--line-input); border-radius: 6px; background: var(--bg);
   }
-  .ai-model select:focus { outline: 2px solid var(--accent); }
-  .ai-model .hint { margin-top: 6px; font-size: 11px; color: var(--side-text); opacity: .6; line-height: 1.4; }
-  main { flex: 1; min-width: 0; }
+  .ai-model select:focus { outline: none; border-color: var(--brand); }
+  .ai-model .hint { margin-top: 6px; font-size: 12px; color: var(--text-hint); line-height: 1.5; }
+
+  main { flex: 1; min-width: 0; position: relative; overflow-y: auto; }
   iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
-  main { position: relative; overflow-y: auto; }
-  #home { display: none; padding: 28px; max-width: 1000px; }
-  #home h1 { margin: 0 0 4px; font-size: 24px; }
-  #home .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 24px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
-  .card .label { color: var(--muted); font-size: 14px; }
-  .card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
-  .card .note { color: var(--muted); font-size: 13px; margin-top: 4px; }
-  .card.warn .value { color: #b3402a; }
-  .brief-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 24px; }
+
+  #home { display: none; padding: 24px 28px; }
+  #home h1 { margin: 0 0 2px; font-size: 22px; font-weight: 600; line-height: 1.4; }
+  #home .sub { margin: 0 0 20px; color: var(--text-sub); font-size: 14px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; }
+  .card .label { color: var(--text-sub); font-size: 14px; }
+  .card .value { font-size: 26px; font-weight: 600; line-height: 1.4; margin-top: 4px; }
+  .card .note { color: var(--text-hint); font-size: 13px; margin-top: 2px; }
+  .card.warn .value { color: var(--danger-text); }
+
+  .brief-box { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
   .brief-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   #brief-btn {
-    font: inherit; font-weight: 700; cursor: pointer;
-    padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    height: 40px; padding: 0 20px; border: 0; border-radius: 6px;
+    background: var(--brand); color: #fff;
+    transition: background 0.1s var(--ease);
   }
-  #brief-btn:disabled { opacity: .6; cursor: default; }
-  .brief-model { color: var(--muted); font-size: 12px; }
-  .brief-out { color: var(--muted); font-size: 15px; line-height: 1.7; }
-  .brief-out.has-lines { color: var(--text); font-size: 16px; }
-  .brief-out.error { color: var(--danger, #b3402a); }
-  .brief-out ol { margin: 0; padding-left: 22px; }
+  #brief-btn:hover { background: var(--brand-dark); }
+  #brief-btn:disabled { background: var(--bg-tag); color: var(--text-disabled); cursor: default; }
+  .brief-model { color: var(--text-hint); font-size: 12px; }
+  .brief-out { color: var(--text-sub); font-size: 14px; line-height: 1.6; }
+  .brief-out.has-lines { color: var(--text); font-size: 15px; background: var(--bg-soft); border-radius: 4px; padding: 14px 20px; }
+  .brief-out.error { color: var(--danger-text); background: var(--bg-soft); border-radius: 4px; padding: 12px 16px; }
+  .brief-out ol { margin: 0; padding-left: 20px; }
   .brief-out li { margin-bottom: 4px; }
-  .chart-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
-  .chart-box h2 { margin: 0 0 16px; font-size: 17px; }
+  .brief-out li:last-child { margin-bottom: 0; }
+
+  .chart-box { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; }
+  .chart-box h2 { margin: 0 0 16px; font-size: 16px; font-weight: 600; line-height: 1.4; }
   .chart { display: flex; align-items: flex-end; gap: 12px; height: 220px; padding-top: 24px; }
   .bar-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
-  .bar-val { font-size: 12px; color: var(--muted); margin-bottom: 4px; white-space: nowrap; }
-  .bar { width: 100%; max-width: 56px; background: var(--accent); border-radius: 6px 6px 0 0; min-height: 2px; }
-  .bar-col.today .bar { background: var(--side); }
-  .bar-day { margin-top: 8px; font-size: 13px; color: var(--muted); }
-  .bar-col.today .bar-day { color: var(--text); font-weight: 700; }
+  .bar-val { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; white-space: nowrap; }
+  .bar { width: 100%; max-width: 56px; background: var(--bar); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .bar-col.today .bar { background: var(--brand); }
+  .bar-day { margin-top: 8px; font-size: 13px; color: var(--text-sub); }
+  .bar-col.today .bar-day { color: var(--text); font-weight: 600; }
+
   @media (max-width: 600px) {
     #home { padding: 16px; }
     body { flex-direction: column; }
-    nav { width: 100%; flex-direction: row; overflow-x: auto; padding: 8px; }
+    nav { width: 100%; flex-direction: row; overflow-x: auto; padding: 8px; border-right: 0; border-bottom: 1px solid var(--line); }
     .brand { display: none; }
     nav a { white-space: nowrap; margin: 0 4px 0 0; }
+    .ai-model { margin-top: 0; margin-left: auto; border-top: 0; padding: 0 8px; min-width: 180px; }
+    .ai-model .hint { display: none; }
   }
 </style>
 </head>
 <body>
 <nav>
-  <div class="brand">☕ 골목카페</div>
+  <div class="brand">골목카페</div>
   <a href="#home" data-page="home">홈</a>
   <a href="#sales" data-page="sales">매출</a>
   <a href="#menu" data-page="menu">메뉴</a>
@@ -112,7 +140,7 @@
       <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B</option>
       <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">Nemotron 3 Nano 30B</option>
     </select>
-    <div class="hint">고른 모델을 먼저 쓰고, 안 되면 다른 모델로 자동으로 넘어가요.</div>
+    <div class="hint">고른 모델을 먼저 사용하고, 응답하지 않으면 다른 모델로 자동으로 넘어갑니다.</div>
   </div>
 </nav>
 <main>
@@ -125,7 +153,7 @@
         <button type="button" id="brief-btn" disabled>오늘 브리핑</button>
         <span class="brief-model" id="brief-model"></span>
       </div>
-      <div class="brief-out" id="brief-out">위 숫자 카드와 7일 매출을 AI가 세 줄로 정리해 드려요.</div>
+      <div class="brief-out" id="brief-out">위 숫자 카드와 최근 7일 매출을 AI가 세 줄로 정리합니다.</div>
     </div>
     <div class="chart-box">
       <h2>최근 7일 매출</h2>
@@ -161,15 +189,33 @@
     return new Date(ms + KST_OFFSET).toISOString().slice(0, 10);
   }
 
+  // 서버·네트워크 오류를 사장님이 알아들을 수 있는 문장으로 바꾼다. (5개 페이지 공통)
+  function friendly(err, fallback) {
+    var m = (err && err.message) || "";
+    if (err instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(m)) {
+      return "인터넷 연결을 확인해 주세요.";
+    }
+    if (/429|모든 모델|바쁩/.test(m)) {
+      return "AI가 지금 바쁩니다. 잠시 후 다시 눌러 주세요.";
+    }
+    // 서버가 준 한글 안내(예: 재고 부족)는 그대로 보여 준다. 기술 문구는 숨긴다.
+    if (/[가-힣]/.test(m) && m.length < 80 && !/[{}]|https?:|PGRST|JWT/.test(m)) { return m; }
+    return fallback;
+  }
+
+  function readJson(res) {
+    return res.text().then(function (t) {
+      var data = null;
+      try { data = t ? JSON.parse(t) : null; } catch (e) { data = null; }
+      if (!res.ok) { throw new Error((data && (data.error || data.message)) || t || res.statusText); }
+      return data;
+    });
+  }
+
   function api(path) {
     return fetch(SUPABASE_URL + "/rest/v1/" + path, {
       headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY }
-    }).then(function (res) {
-      if (!res.ok) {
-        return res.text().then(function (t) { throw new Error(t || res.statusText); });
-      }
-      return res.json();
-    });
+    }).then(readJson);
   }
 
   function renderCards(cards) {
@@ -201,7 +247,7 @@
 
   function resetBrief(enable) {
     briefOut.className = "brief-out";
-    briefOut.textContent = "위 숫자 카드와 7일 매출을 AI가 세 줄로 정리해 드려요.";
+    briefOut.textContent = "위 숫자 카드와 최근 7일 매출을 AI가 세 줄로 정리합니다.";
     briefModel.textContent = "";
     briefBtn.disabled = !enable;
   }
@@ -223,7 +269,7 @@
     briefBtn.disabled = true;
     briefBtn.textContent = "정리하는 중…";
     briefOut.className = "brief-out";
-    briefOut.textContent = "AI가 오늘 숫자를 읽고 있어요. 최대 1분쯤 걸릴 수 있어요.";
+    briefOut.textContent = "AI가 오늘 숫자를 읽고 있습니다. 최대 1분 정도 걸릴 수 있습니다.";
     briefModel.textContent = "";
 
     fetch(SUPABASE_URL + "/functions/v1/cafe-ai", {
@@ -234,22 +280,16 @@
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ type: "brief", stats: briefStats, model: document.getElementById("ai-model").value })
-    }).then(function (res) {
-      return res.text().then(function (t) {
-        var data = null;
-        try { data = t ? JSON.parse(t) : null; } catch (e) { data = null; }
-        if (!res.ok) { throw new Error((data && data.error) || t || res.statusText); }
-        return data;
-      });
-    }).then(function (ai) {
-      if (!Array.isArray(ai.lines) || ai.lines.length < 3) {
-        throw new Error("AI 응답 형식이 올바르지 않아요.");
+    }).then(readJson).then(function (ai) {
+      if (!ai || !Array.isArray(ai.lines) || ai.lines.length < 3) {
+        throw new Error("AI 답변을 읽지 못했습니다.");
       }
       showBriefLines(ai.lines);
       briefModel.textContent = "만든 AI: " + ai.model;
     }).catch(function (err) {
       briefOut.className = "brief-out error";
-      briefOut.textContent = "브리핑을 만들지 못했어요: " + err.message;
+      briefOut.textContent = "브리핑을 만들지 못했습니다. " +
+        friendly(err, "잠시 후 다시 눌러 주세요.");
     }).then(function () {
       briefBtn.disabled = false;
       briefBtn.textContent = "오늘 브리핑";
@@ -300,13 +340,13 @@
         { label: "오늘 매출", value: won(todayAmount),
           note: "어제 " + won(yesterdayAmount) },
         { label: "오늘 주문 수", value: ordersToday + "건",
-          note: ordersToday ? "판매 수량 " + qtyToday + "개" : "아직 판매가 없어요" },
+          note: ordersToday ? "판매 수량 " + qtyToday + "개" : "아직 판매가 없습니다." },
         { label: "평균 별점", value: avg === null ? "-" : "★ " + avg.toFixed(1),
-          note: avg === null ? "아직 리뷰가 없어요" : "리뷰 " + reviews.length + "개 · 5점 만점" },
+          note: avg === null ? "아직 리뷰가 없습니다." : "리뷰 " + reviews.length + "개 · 5점 만점" },
         { label: "재고 부족 메뉴", value: lowMenus.length + "개", warn: lowMenus.length > 0,
           note: lowMenus.length
             ? lowMenus.map(function (m) { return m.name + " " + m.stock; }).join(" · ")
-            : "재고가 모두 넉넉해요" }
+            : "재고가 모두 충분합니다." }
       ]);
       renderChart(week);
 
@@ -322,8 +362,9 @@
       if (avg !== null) { briefStats.avg_rating = Number(avg.toFixed(1)); }
       resetBrief(true);
     }).catch(function (err) {
-      cardsEl.innerHTML = '<div class="card warn"><div class="label">불러오지 못했어요</div>' +
-        '<div class="note">' + esc(err.message) + '</div></div>';
+      cardsEl.innerHTML = '<div class="card warn"><div class="label">숫자를 불러오지 못했습니다</div>' +
+        '<div class="note">' + esc(friendly(err, "잠시 후 홈 메뉴를 다시 눌러 주세요.")) + '</div></div>';
+      briefBtn.disabled = true;
       chartEl.innerHTML = "";
     });
   }
@@ -342,11 +383,10 @@
 
   function placeholder(title) {
     return '<!DOCTYPE html><html lang="ko"><body style="margin:0;height:100vh;display:flex;' +
-      'align-items:center;justify-content:center;background:#fbf6ef;color:#8a7566;' +
-      'font-family:\'Malgun Gothic\',sans-serif;text-align:center">' +
-      '<div><div style="font-size:40px">🚧</div>' +
-      '<div style="font-size:22px;margin-top:8px;color:#2d1f16">' + title + '</div>' +
-      '<div style="font-size:16px;margin-top:6px">준비 중입니다</div></div></body></html>';
+      'align-items:center;justify-content:center;background:#fff;color:rgba(0,0,0,.6);' +
+      'font-family:Pretendard,\'Malgun Gothic\',sans-serif;text-align:center">' +
+      '<div><div style="font-size:18px;font-weight:600;color:rgba(0,0,0,.85)">' + title + '</div>' +
+      '<div style="font-size:14px;margin-top:6px">준비 중입니다.</div></div></body></html>';
   }
 
   function show(key) {
@@ -362,7 +402,13 @@
     homeEl.style.display = isHome ? "block" : "none";
     frame.style.display = isHome ? "none" : "block";
     if (isHome) { loadHome(); return; }   // 홈에 올 때마다 최신 숫자로 다시 읽는다
-    // 파일이 있는지 먼저 확인하고, 없으면 "준비 중"을 보여 준다.
+    // 파일을 직접 열었을 때(file://)는 파일 확인이 막히므로 바로 연다.
+    if (location.protocol === "file:") {
+      frame.removeAttribute("srcdoc");
+      frame.src = page.file;
+      return;
+    }
+    // 서버로 열었을 때는 파일이 있는지 먼저 확인하고, 없으면 "준비 중"을 보여 준다.
     fetch(page.file, { method: "HEAD" })
       .then(function (res) {
         if (res.ok) {

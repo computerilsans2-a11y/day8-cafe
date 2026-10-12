@@ -5,60 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>메뉴 · 골목카페</title>
 <style>
+  /* 디자인 기준(모든 페이지 공통): 흰 바탕 + 1px 얇은 선 + 무채색 투명도 회색 + 파랑 하나. 그림자·이모지 없음. */
   :root {
-    --bg: #fbf6ef;
-    --panel: #ffffff;
-    --side: #4a2f1f;
-    --side-text: #f3e6d6;
-    --accent: #c97b3c;
-    --text: #2d1f16;
-    --muted: #8a7566;
-    --line: #e8dccd;
-    --font: "Pretendard", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
-    --danger: #b3402a;
+    --bg: #ffffff;
+    --bg-soft: rgba(0, 0, 0, 0.04);
+    --bg-tag: rgba(0, 0, 0, 0.06);
+    --line: rgba(0, 0, 0, 0.11);
+    --line-input: rgba(0, 0, 0, 0.18);
+    --text: rgba(0, 0, 0, 0.85);
+    --text-sub: rgba(0, 0, 0, 0.6);
+    --text-hint: rgba(0, 0, 0, 0.45);
+    --text-disabled: rgba(0, 0, 0, 0.25);
+    --brand: #1890ff;
+    --brand-dark: #096dd9;
+    --danger: #ff4d4f;
+    --danger-text: #f5222d;
+    --font: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    --ease: cubic-bezier(0.31, 0.27, 0.15, 0.99);
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 28px;
+    padding: 24px 28px;
     font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
     color: var(--text);
     background: var(--bg);
   }
-  .wrap { max-width: 1000px; }
-  h1 { margin: 0 0 4px; font-size: 24px; }
-  .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
-  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
-  .box h2 { margin: 0 0 14px; font-size: 17px; }
+  h1 { margin: 0 0 2px; font-size: 22px; font-weight: 600; line-height: 1.4; }
+  .sub { margin: 0 0 20px; color: var(--text-sub); }
+  .box { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+  .box h2 { margin: 0 0 14px; font-size: 16px; font-weight: 600; line-height: 1.4; }
 
-  form { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
-  label { display: flex; flex-direction: column; font-size: 13px; color: var(--muted); gap: 4px; }
+  #msg { margin: 0 0 16px; padding: 12px 16px; border-radius: 4px; background: var(--bg-soft); }
+  #msg:empty { display: none; }
+  #msg.error { color: var(--danger-text); }
+
+  form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  label { display: flex; flex-direction: column; font-size: 13px; color: var(--text-sub); gap: 4px; }
   input, select {
     font: inherit; color: var(--text);
-    padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    height: 40px; padding: 0 12px;
+    border: 1px solid var(--line-input); border-radius: 6px; background: var(--bg);
+    transition: border-color 0.1s var(--ease);
   }
-  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  #f-name { width: 190px; }
+  input:focus, select:focus { outline: none; border-color: var(--brand); }
+  #f-name { width: 200px; }
   #f-category { width: 130px; }
-  #f-price, #f-stock { width: 110px; }
+  #f-price, #f-stock { width: 120px; }
   button {
-    font: inherit; font-weight: 700; cursor: pointer;
-    padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    height: 40px; padding: 0 20px; border: 0; border-radius: 6px;
+    background: var(--brand); color: #fff;
+    transition: background 0.1s var(--ease);
   }
-  button:disabled { opacity: .6; cursor: default; }
+  button:hover { background: var(--brand-dark); }
+  button:disabled { background: var(--bg-tag); color: var(--text-disabled); cursor: default; }
 
   table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 15px; }
-  th { color: var(--muted); font-size: 13px; font-weight: 500; }
-  td input { width: 100px; padding: 7px 8px; }
-  tr.low td.stock-cell input { color: var(--danger); border-color: var(--danger); font-weight: 700; }
-  tr.low .name { color: var(--danger); font-weight: 700; }
-  .badge { margin-left: 8px; font-size: 12px; color: var(--danger); }
-  .saved { color: var(--muted); font-size: 13px; }
-  .empty { color: var(--muted); padding: 18px 8px; }
-  #msg { min-height: 20px; margin: 0 0 12px; font-size: 14px; }
-  #msg.error { color: var(--danger); }
-  .unit { color: var(--muted); margin-left: 4px; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { color: var(--text-sub); font-size: 13px; font-weight: 400; }
+  td input { width: 120px; height: 36px; }
+  .cell-price, .cell-stock { white-space: nowrap; }
+  .unit { color: var(--text-sub); margin: 0 4px; }
+  tr.low td.cell-stock input { color: var(--danger-text); border-color: var(--danger); font-weight: 600; }
+  tr.low .name { color: var(--danger-text); font-weight: 600; }
+  .tag { margin-left: 8px; display: inline-block; padding: 0 6px; height: 22px; line-height: 22px; border-radius: 4px; background: var(--bg-tag); color: var(--danger-text); font-size: 12px; }
+  .saved { color: var(--text-hint); font-size: 13px; }
+  .empty { color: var(--text-sub); padding: 16px 8px; }
 
   @media (max-width: 600px) {
     body { padding: 16px; }
@@ -69,45 +84,43 @@
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>메뉴 · 재고</h1>
-  <p class="sub">재고가 5개 이하인 메뉴는 빨간색으로 보입니다. 가격이나 재고를 고치고 칸 밖을 누르면 저장됩니다.</p>
-  <p id="msg"></p>
+<h1>메뉴 · 재고</h1>
+<p class="sub">재고가 5개 이하인 메뉴는 빨간색으로 표시됩니다. 가격이나 재고를 고친 뒤 칸 밖을 누르면 저장됩니다.</p>
+<p id="msg"></p>
 
-  <div class="box">
-    <h2>메뉴 추가</h2>
-    <form id="add-form">
-      <label>메뉴 이름
-        <input id="f-name" type="text" required maxlength="40" placeholder="예) 아메리카노">
-      </label>
-      <label>분류
-        <select id="f-category">
-          <option>커피</option>
-          <option>음료</option>
-          <option>디저트</option>
-          <option>기타</option>
-        </select>
-      </label>
-      <label>가격 (원)
-        <input id="f-price" type="number" min="0" step="100" required placeholder="4500">
-      </label>
-      <label>재고 (개)
-        <input id="f-stock" type="number" min="0" step="1" required placeholder="20">
-      </label>
-      <button type="submit" id="add-btn">추가</button>
-    </form>
-  </div>
+<div class="box">
+  <h2>메뉴 추가</h2>
+  <form id="add-form">
+    <label>메뉴 이름
+      <input id="f-name" type="text" required maxlength="40" placeholder="예) 아메리카노">
+    </label>
+    <label>분류
+      <select id="f-category">
+        <option>커피</option>
+        <option>음료</option>
+        <option>디저트</option>
+        <option>기타</option>
+      </select>
+    </label>
+    <label>가격 (원)
+      <input id="f-price" type="number" min="0" step="100" required placeholder="4500">
+    </label>
+    <label>재고 (개)
+      <input id="f-stock" type="number" min="0" step="1" required placeholder="20">
+    </label>
+    <button type="submit" id="add-btn">추가</button>
+  </form>
+</div>
 
-  <div class="box">
-    <h2>메뉴 목록</h2>
-    <table>
-      <thead>
-        <tr><th>메뉴</th><th>분류</th><th>가격</th><th>재고</th><th></th></tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div id="empty" class="empty" style="display:none">아직 등록된 메뉴가 없습니다. 위에서 첫 메뉴를 추가해 보세요.</div>
-  </div>
+<div class="box">
+  <h2>메뉴 목록</h2>
+  <table>
+    <thead>
+      <tr><th>메뉴</th><th>분류</th><th>가격</th><th>재고</th><th></th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" class="empty" style="display:none">아직 등록된 메뉴가 없습니다. 위에서 첫 메뉴를 추가해 주세요.</div>
 </div>
 
 <script>
@@ -119,6 +132,21 @@
   var emptyEl = document.getElementById("empty");
   var msgEl = document.getElementById("msg");
 
+  // 서버·네트워크 오류를 사장님이 알아들을 수 있는 문장으로 바꾼다. (5개 페이지 공통)
+  function friendly(err, fallback) {
+    var m = (err && err.message) || "";
+    if (err instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(m)) {
+      return "인터넷 연결을 확인해 주세요.";
+    }
+    if (/429|모든 모델|바쁩/.test(m)) {
+      return "AI가 지금 바쁩니다. 잠시 후 다시 눌러 주세요.";
+    }
+    if (/[가-힣]/.test(m) && m.length < 80 && !/[{}]|https?:|PGRST|JWT/.test(m)) { return m; }
+    return fallback;
+  }
+
+  function won(n) { return "₩" + Number(n).toLocaleString("ko-KR"); }
+
   function api(path, options) {
     options = options || {};
     options.headers = Object.assign({
@@ -127,11 +155,12 @@
       "Content-Type": "application/json"
     }, options.headers || {});
     return fetch(SUPABASE_URL + "/rest/v1/" + path, options).then(function (res) {
-      if (!res.ok) {
-        return res.text().then(function (t) { throw new Error(t || res.statusText); });
-      }
-      // 저장 요청은 응답 본문이 비어 있을 수 있다.
-      return res.text().then(function (t) { return t ? JSON.parse(t) : null; });
+      return res.text().then(function (t) {
+        var data = null;
+        try { data = t ? JSON.parse(t) : null; } catch (e) { data = null; }
+        if (!res.ok) { throw new Error((data && (data.error || data.message)) || t || res.statusText); }
+        return data;
+      });
     });
   }
 
@@ -152,8 +181,8 @@
   function renderRow(menu) {
     var tr = el("tr");
     var nameCell = el("td", {}, [el("span", { className: "name", textContent: menu.name })]);
-    var badge = el("span", { className: "badge", textContent: "재고 부족" });
-    nameCell.appendChild(badge);
+    var tag = el("span", { className: "tag", textContent: "재고 부족" });
+    nameCell.appendChild(tag);
 
     var priceInput = el("input", { type: "number", min: 0, step: 100, value: menu.price });
     var stockInput = el("input", { type: "number", min: 0, step: 1, value: menu.stock });
@@ -162,7 +191,7 @@
     function refreshLow() {
       var low = Number(stockInput.value) <= LOW_STOCK;
       tr.className = low ? "low" : "";
-      badge.style.display = low ? "inline" : "none";
+      tag.style.display = low ? "inline-block" : "none";
     }
 
     function save(field, input) {
@@ -170,13 +199,13 @@
       if (input.value === "" || !Number.isInteger(value) || value < 0) {
         input.value = menu[field];
         refreshLow();
-        say("0 이상의 정수만 입력할 수 있습니다.", true);
+        say("가격과 재고에는 0 이상의 숫자만 입력할 수 있습니다. 소수점은 쓸 수 없습니다.", true);
         return;
       }
       if (value === menu[field]) { return; }
       var body = {};
       body[field] = value;
-      status.textContent = "저장 중…";
+      status.textContent = "저장 중";
       api("menus?id=eq." + menu.id, {
         method: "PATCH",
         headers: { "Prefer": "return=minimal" },
@@ -190,7 +219,8 @@
         input.value = menu[field];
         refreshLow();
         status.textContent = "";
-        say("저장하지 못했습니다: " + err.message, true);
+        say("저장하지 못했습니다. 원래 값으로 되돌렸습니다. " +
+          friendly(err, "잠시 후 다시 시도해 주세요."), true);
       });
     }
 
@@ -200,9 +230,8 @@
 
     tr.appendChild(nameCell);
     tr.appendChild(el("td", { textContent: menu.category }));
-    tr.appendChild(el("td", {}, [priceInput, el("span", { className: "unit", textContent: "원" })]));
-    var stockCell = el("td", { className: "stock-cell" }, [stockInput, el("span", { className: "unit", textContent: "개" })]);
-    tr.appendChild(stockCell);
+    tr.appendChild(el("td", { className: "cell-price" }, [el("span", { className: "unit", textContent: "₩" }), priceInput]));
+    tr.appendChild(el("td", { className: "cell-stock" }, [stockInput, el("span", { className: "unit", textContent: "개" })]));
     tr.appendChild(el("td", {}, [status]));
     refreshLow();
     return tr;
@@ -211,10 +240,11 @@
   function load() {
     return api("menus?select=*&order=id.asc").then(function (menus) {
       rowsEl.innerHTML = "";
-      menus.forEach(function (m) { rowsEl.appendChild(renderRow(m)); });
-      emptyEl.style.display = menus.length ? "none" : "block";
+      (menus || []).forEach(function (m) { rowsEl.appendChild(renderRow(m)); });
+      emptyEl.style.display = menus && menus.length ? "none" : "block";
     }).catch(function (err) {
-      say("메뉴를 불러오지 못했습니다: " + err.message, true);
+      say("메뉴 목록을 불러오지 못했습니다. " +
+        friendly(err, "화면을 새로고침한 뒤 다시 시도해 주세요."), true);
     });
   }
 
@@ -226,7 +256,7 @@
     var stock = Number(document.getElementById("f-stock").value);
     if (!name) { say("메뉴 이름을 입력해 주세요.", true); return; }
     if (!Number.isInteger(price) || price < 0 || !Number.isInteger(stock) || stock < 0) {
-      say("가격과 재고는 0 이상의 정수로 입력해 주세요.", true);
+      say("가격과 재고에는 0 이상의 숫자만 입력할 수 있습니다. 소수점은 쓸 수 없습니다.", true);
       return;
     }
     btn.disabled = true;
@@ -241,10 +271,10 @@
       })
     }).then(function () {
       e.target.reset();
-      say("'" + name + "' 메뉴를 추가했습니다.");
+      say("'" + name + "' 메뉴를 추가했습니다. (" + won(price) + ", 재고 " + stock + "개)");
       return load();
     }).catch(function (err) {
-      say("추가하지 못했습니다: " + err.message, true);
+      say("메뉴를 추가하지 못했습니다. " + friendly(err, "잠시 후 다시 시도해 주세요."), true);
     }).then(function () {
       btn.disabled = false;
     });
