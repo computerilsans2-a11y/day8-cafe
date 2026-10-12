@@ -98,54 +98,122 @@
 </main>
 
 <script>
-  // ── 홈 화면 데이터 ──────────────────────────────────────
-  // 지금은 샘플 값이다. STEPS.md 4단계에서 Supabase의 sales 데이터로 바꾼다.
-  var HOME_DATA = {
-    cards: [
-      { label: "오늘 매출",     value: "₩ 184,000", note: "어제보다 +12%" },
-      { label: "오늘 판매 건수", value: "47건",      note: "아메리카노 21잔" },
-      { label: "재고 부족 메뉴", value: "3개",       note: "원두 · 우유 · 크루아상", warn: true },
-      { label: "새 리뷰",       value: "5개",       note: "답글 필요 2개" }
-    ],
-    week: [
-      { day: "월", amount: 142000 },
-      { day: "화", amount: 128000 },
-      { day: "수", amount: 156000 },
-      { day: "목", amount: 133000 },
-      { day: "금", amount: 201000 },
-      { day: "토", amount: 238000 },
-      { day: "일", amount: 184000 }   // 마지막 칸이 오늘
-    ]
-  };
+  // ── 홈 화면: Supabase에서 읽은 실제 데이터 ─────────────────
+  var SUPABASE_URL = "https://aygdylhsmzevjrybnozf.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_EHyev6fOsOQbrASk6X79vw_uJh4dKcY";
+  var LOW_STOCK = 5;                       // 재고가 이 값 이하이면 "부족"
+  var DAY_MS = 24 * 60 * 60 * 1000;
+  var KST_OFFSET = 9 * 60 * 60 * 1000;     // 한국 시간은 UTC보다 9시간 빠르다
+  var DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
 
   var homeEl = document.getElementById("home");
+  var cardsEl = document.getElementById("cards");
+  var chartEl = document.getElementById("chart");
 
-  function won(n) { return "₩" + n.toLocaleString("ko-KR"); }
+  function won(n) { return "₩" + Number(n).toLocaleString("ko-KR"); }
 
-  function renderHome(data) {
-    var d = new Date();
-    var days = ["일", "월", "화", "수", "목", "금", "토"];
-    document.getElementById("today-label").textContent =
-      d.getFullYear() + "년 " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + days[d.getDay()] + ") · 샘플 숫자입니다";
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
 
-    document.getElementById("cards").innerHTML = data.cards.map(function (c) {
+  // 시각(ms) → 한국 시간 기준 날짜 "YYYY-MM-DD". 쓰는 컴퓨터의 시간대와 상관없다.
+  function kstDayKey(ms) {
+    return new Date(ms + KST_OFFSET).toISOString().slice(0, 10);
+  }
+
+  function api(path) {
+    return fetch(SUPABASE_URL + "/rest/v1/" + path, {
+      headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY }
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.text().then(function (t) { throw new Error(t || res.statusText); });
+      }
+      return res.json();
+    });
+  }
+
+  function renderCards(cards) {
+    cardsEl.innerHTML = cards.map(function (c) {
       return '<div class="card' + (c.warn ? ' warn' : '') + '">' +
         '<div class="label">' + c.label + '</div>' +
-        '<div class="value">' + c.value + '</div>' +
-        '<div class="note">' + c.note + '</div></div>';
+        '<div class="value">' + esc(c.value) + '</div>' +
+        '<div class="note">' + esc(c.note) + '</div></div>';
     }).join("");
+  }
 
-    var max = Math.max.apply(null, data.week.map(function (w) { return w.amount; })) || 1;
-    document.getElementById("chart").innerHTML = data.week.map(function (w, i) {
+  function renderChart(week) {
+    var max = Math.max.apply(null, week.map(function (w) { return w.amount; })) || 1;
+    chartEl.innerHTML = week.map(function (w, i) {
       var h = Math.round(w.amount / max * 80);
-      var today = i === data.week.length - 1 ? " today" : "";
+      var today = i === week.length - 1 ? " today" : "";
       return '<div class="bar-col' + today + '">' +
         '<div class="bar-val">' + won(w.amount) + '</div>' +
         '<div class="bar" style="height:' + h + '%"></div>' +
         '<div class="bar-day">' + w.day + '</div></div>';
     }).join("");
   }
-  renderHome(HOME_DATA);
+
+  function loadHome() {
+    var now = Date.now();
+    var todayKey = kstDayKey(now);
+    var todayStart = Date.parse(todayKey + "T00:00:00Z") - KST_OFFSET;   // 오늘 0시(한국)
+    var weekStart = todayStart - 6 * DAY_MS;                             // 6일 전 0시
+
+    var d = new Date(Date.parse(todayKey + "T00:00:00Z"));
+    document.getElementById("today-label").textContent =
+      d.getUTCFullYear() + "년 " + (d.getUTCMonth() + 1) + "월 " + d.getUTCDate() +
+      "일 (" + DAY_NAMES[d.getUTCDay()] + ") · 한국 시간 기준";
+
+    return Promise.all([
+      api("sales?select=quantity,amount,sold_at&sold_at=gte." +
+          encodeURIComponent(new Date(weekStart).toISOString()) + "&order=sold_at.asc&limit=5000"),
+      api("reviews?select=rating"),
+      api("menus?select=name,stock&stock=lte." + LOW_STOCK + "&order=stock.asc,id.asc")
+    ]).then(function (res) {
+      var sales = res[0], reviews = res[1], lowMenus = res[2];
+
+      // 한국 시간 날짜별 매출 합계
+      var amountByDay = {}, ordersToday = 0, qtyToday = 0;
+      sales.forEach(function (s) {
+        var key = kstDayKey(Date.parse(s.sold_at));
+        amountByDay[key] = (amountByDay[key] || 0) + s.amount;
+        if (key === todayKey) { ordersToday += 1; qtyToday += s.quantity; }
+      });
+
+      var week = [];
+      for (var i = 0; i < 7; i++) {
+        var dayStart = weekStart + i * DAY_MS;
+        var key = kstDayKey(dayStart);
+        var wd = new Date(Date.parse(key + "T00:00:00Z")).getUTCDay();
+        week.push({ day: DAY_NAMES[wd], amount: amountByDay[key] || 0 });
+      }
+      var todayAmount = week[6].amount;
+      var yesterdayAmount = week[5].amount;
+
+      var ratingSum = reviews.reduce(function (a, r) { return a + r.rating; }, 0);
+      var avg = reviews.length ? ratingSum / reviews.length : null;
+
+      renderCards([
+        { label: "오늘 매출", value: won(todayAmount),
+          note: "어제 " + won(yesterdayAmount) },
+        { label: "오늘 주문 수", value: ordersToday + "건",
+          note: ordersToday ? "판매 수량 " + qtyToday + "개" : "아직 판매가 없어요" },
+        { label: "평균 별점", value: avg === null ? "-" : "★ " + avg.toFixed(1),
+          note: avg === null ? "아직 리뷰가 없어요" : "리뷰 " + reviews.length + "개 · 5점 만점" },
+        { label: "재고 부족 메뉴", value: lowMenus.length + "개", warn: lowMenus.length > 0,
+          note: lowMenus.length
+            ? lowMenus.map(function (m) { return m.name + " " + m.stock; }).join(" · ")
+            : "재고가 모두 넉넉해요" }
+      ]);
+      renderChart(week);
+    }).catch(function (err) {
+      cardsEl.innerHTML = '<div class="card warn"><div class="label">불러오지 못했어요</div>' +
+        '<div class="note">' + esc(err.message) + '</div></div>';
+      chartEl.innerHTML = "";
+    });
+  }
 
   // 메뉴 이름 → 열 파일. 홈은 위의 홈 화면이 직접 보여 준다.
   var PAGES = {
@@ -180,7 +248,7 @@
     var isHome = key === "home";
     homeEl.style.display = isHome ? "block" : "none";
     frame.style.display = isHome ? "none" : "block";
-    if (isHome) { return; }
+    if (isHome) { loadHome(); return; }   // 홈에 올 때마다 최신 숫자로 다시 읽는다
     // 파일이 있는지 먼저 확인하고, 없으면 "준비 중"을 보여 준다.
     fetch(page.file, { method: "HEAD" })
       .then(function (res) {
