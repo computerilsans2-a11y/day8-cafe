@@ -172,6 +172,7 @@ async function handleBrief(body: Record<string, unknown>, key: string) {
     low_stock_count: "재고 부족 메뉴 수(개)",
     low_stock_names: "재고 부족 메뉴",
     yesterday_revenue: "어제 매출(원)",
+    week_revenue: "최근 7일 매출(원, 오래된 날부터 오늘까지)",
   };
   const lines = Object.keys(fields)
     .filter((k) => stats[k] !== undefined && stats[k] !== null && String(stats[k]) !== "")
@@ -181,7 +182,7 @@ async function handleBrief(body: Record<string, unknown>, key: string) {
   const system =
     "너는 동네 카페 사장님의 아침 브리핑 비서야. 받은 숫자만 사용해서 JSON으로만 답해. " +
     '형식: {"lines":["첫째 줄","둘째 줄","셋째 줄"]}. ' +
-    "정확히 3줄, 한국어 존댓말, 줄마다 한 문장. 1줄은 매출·주문 상황, 2줄은 손님 반응(별점), 3줄은 해야 할 일(재고 등). " +
+    "정확히 3줄, 한국어 존댓말, 줄마다 한 문장. 1줄은 매출·주문 상황(최근 7일 흐름이 있으면 함께), 2줄은 손님 반응(별점), 3줄은 해야 할 일(재고 등). " +
     "주어지지 않은 숫자는 지어내지 마. JSON 밖의 말은 쓰지 마.";
   const user = lines.join("\n");
 

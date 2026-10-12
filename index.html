@@ -65,6 +65,19 @@
   .card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
   .card .note { color: var(--muted); font-size: 13px; margin-top: 4px; }
   .card.warn .value { color: #b3402a; }
+  .brief-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 24px; }
+  .brief-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  #brief-btn {
+    font: inherit; font-weight: 700; cursor: pointer;
+    padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+  }
+  #brief-btn:disabled { opacity: .6; cursor: default; }
+  .brief-model { color: var(--muted); font-size: 12px; }
+  .brief-out { color: var(--muted); font-size: 15px; line-height: 1.7; }
+  .brief-out.has-lines { color: var(--text); font-size: 16px; }
+  .brief-out.error { color: var(--danger, #b3402a); }
+  .brief-out ol { margin: 0; padding-left: 22px; }
+  .brief-out li { margin-bottom: 4px; }
   .chart-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
   .chart-box h2 { margin: 0 0 16px; font-size: 17px; }
   .chart { display: flex; align-items: flex-end; gap: 12px; height: 220px; padding-top: 24px; }
@@ -107,6 +120,13 @@
     <h1>오늘의 가게</h1>
     <p class="sub" id="today-label"></p>
     <div class="cards" id="cards"></div>
+    <div class="brief-box">
+      <div class="brief-head">
+        <button type="button" id="brief-btn" disabled>오늘 브리핑</button>
+        <span class="brief-model" id="brief-model"></span>
+      </div>
+      <div class="brief-out" id="brief-out">위 숫자 카드와 7일 매출을 AI가 세 줄로 정리해 드려요.</div>
+    </div>
     <div class="chart-box">
       <h2>최근 7일 매출</h2>
       <div class="chart" id="chart"></div>
@@ -173,6 +193,69 @@
     }).join("");
   }
 
+  // ── 오늘 브리핑: 홈 숫자를 cafe-ai(brief)에 보내 세 줄로 받는다 ──
+  var briefStats = null;
+  var briefBtn = document.getElementById("brief-btn");
+  var briefOut = document.getElementById("brief-out");
+  var briefModel = document.getElementById("brief-model");
+
+  function resetBrief(enable) {
+    briefOut.className = "brief-out";
+    briefOut.textContent = "위 숫자 카드와 7일 매출을 AI가 세 줄로 정리해 드려요.";
+    briefModel.textContent = "";
+    briefBtn.disabled = !enable;
+  }
+
+  function showBriefLines(lines) {
+    var ol = document.createElement("ol");
+    lines.forEach(function (line) {
+      var li = document.createElement("li");
+      li.textContent = line;
+      ol.appendChild(li);
+    });
+    briefOut.className = "brief-out has-lines";
+    briefOut.innerHTML = "";
+    briefOut.appendChild(ol);
+  }
+
+  briefBtn.addEventListener("click", function () {
+    if (!briefStats) { return; }
+    briefBtn.disabled = true;
+    briefBtn.textContent = "정리하는 중…";
+    briefOut.className = "brief-out";
+    briefOut.textContent = "AI가 오늘 숫자를 읽고 있어요. 최대 1분쯤 걸릴 수 있어요.";
+    briefModel.textContent = "";
+
+    fetch(SUPABASE_URL + "/functions/v1/cafe-ai", {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ type: "brief", stats: briefStats, model: document.getElementById("ai-model").value })
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        var data = null;
+        try { data = t ? JSON.parse(t) : null; } catch (e) { data = null; }
+        if (!res.ok) { throw new Error((data && data.error) || t || res.statusText); }
+        return data;
+      });
+    }).then(function (ai) {
+      if (!Array.isArray(ai.lines) || ai.lines.length < 3) {
+        throw new Error("AI 응답 형식이 올바르지 않아요.");
+      }
+      showBriefLines(ai.lines);
+      briefModel.textContent = "만든 AI: " + ai.model;
+    }).catch(function (err) {
+      briefOut.className = "brief-out error";
+      briefOut.textContent = "브리핑을 만들지 못했어요: " + err.message;
+    }).then(function () {
+      briefBtn.disabled = false;
+      briefBtn.textContent = "오늘 브리핑";
+    });
+  });
+
   function loadHome() {
     var now = Date.now();
     var todayKey = kstDayKey(now);
@@ -226,6 +309,18 @@
             : "재고가 모두 넉넉해요" }
       ]);
       renderChart(week);
+
+      // 브리핑 버튼이 AI로 보낼 숫자: 위 카드 4개와 7일 매출(어제 매출 포함)
+      briefStats = {
+        revenue: todayAmount,
+        orders: ordersToday,
+        low_stock_count: lowMenus.length,
+        low_stock_names: lowMenus.map(function (m) { return m.name + " " + m.stock + "개"; }),
+        yesterday_revenue: yesterdayAmount,
+        week_revenue: week.map(function (w) { return w.day + " " + w.amount; })
+      };
+      if (avg !== null) { briefStats.avg_rating = Number(avg.toFixed(1)); }
+      resetBrief(true);
     }).catch(function (err) {
       cardsEl.innerHTML = '<div class="card warn"><div class="label">불러오지 못했어요</div>' +
         '<div class="note">' + esc(err.message) + '</div></div>';
