@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cafe-dashboard",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "C:\\Users\\admin\\AppData\\Local\\Temp\\claude\\C--Users-admin-Downloads-day08\\351efbd2-c1ac-490e-88a7-47026dcbe529\\scratchpad\\serve.ps1"
+      ],
+      "port": 5173
+    }
+  ]
+}

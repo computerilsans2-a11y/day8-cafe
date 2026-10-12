@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>골목카페 운영 대시보드</title>
+<style>
+  :root {
+    --bg: #fbf6ef;
+    --panel: #ffffff;
+    --side: #4a2f1f;
+    --side-text: #f3e6d6;
+    --accent: #c97b3c;
+    --text: #2d1f16;
+    --muted: #8a7566;
+    --line: #e8dccd;
+    --font: "Pretendard", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg);
+  }
+  nav {
+    width: 200px;
+    flex-shrink: 0;
+    background: var(--side);
+    color: var(--side-text);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 12px;
+  }
+  .brand { font-size: 18px; font-weight: 700; padding: 4px 12px 20px; }
+  nav a {
+    display: block;
+    padding: 12px 14px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    color: var(--side-text);
+    text-decoration: none;
+    font-size: 16px;
+  }
+  nav a:hover { background: rgba(255,255,255,0.1); }
+  nav a.active { background: var(--accent); color: #fff; font-weight: 700; }
+  main { flex: 1; min-width: 0; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
+  @media (max-width: 600px) {
+    body { flex-direction: column; }
+    nav { width: 100%; flex-direction: row; overflow-x: auto; padding: 8px; }
+    .brand { display: none; }
+    nav a { white-space: nowrap; margin: 0 4px 0 0; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <div class="brand">☕ 골목카페</div>
+  <a href="#home" data-page="home">홈</a>
+  <a href="#sales" data-page="sales">매출</a>
+  <a href="#menu" data-page="menu">메뉴</a>
+  <a href="#reviews" data-page="reviews">리뷰</a>
+  <a href="#promo" data-page="promo">홍보</a>
+</nav>
+<main>
+  <iframe id="frame" title="가운데 화면"></iframe>
+</main>
+
+<script>
+  // 메뉴 이름 → 열 파일. 홈은 2단계에서 만들 예정이라 아직 파일이 없다.
+  var PAGES = {
+    home:    { title: "홈",   file: null },
+    sales:   { title: "매출", file: "sales.html" },
+    menu:    { title: "메뉴", file: "menu.html" },
+    reviews: { title: "리뷰", file: "reviews.html" },
+    promo:   { title: "홍보", file: "promo.html" }
+  };
+
+  var frame = document.getElementById("frame");
+  var links = document.querySelectorAll("nav a");
+
+  function placeholder(title) {
+    return '<!DOCTYPE html><html lang="ko"><body style="margin:0;height:100vh;display:flex;' +
+      'align-items:center;justify-content:center;background:#fbf6ef;color:#8a7566;' +
+      'font-family:\'Malgun Gothic\',sans-serif;text-align:center">' +
+      '<div><div style="font-size:40px">🚧</div>' +
+      '<div style="font-size:22px;margin-top:8px;color:#2d1f16">' + title + '</div>' +
+      '<div style="font-size:16px;margin-top:6px">준비 중입니다</div></div></body></html>';
+  }
+
+  function show(key) {
+    var page = PAGES[key] || PAGES.home;
+    key = PAGES[key] ? key : "home";
+    links.forEach(function (a) {
+      a.classList.toggle("active", a.dataset.page === key);
+    });
+    document.title = page.title + " · 골목카페";
+
+    if (!page.file) {
+      frame.removeAttribute("src");
+      frame.srcdoc = placeholder(page.title);
+      return;
+    }
+    // 파일이 있는지 먼저 확인하고, 없으면 "준비 중"을 보여 준다.
+    fetch(page.file, { method: "HEAD" })
+      .then(function (res) {
+        if (res.ok) {
+          frame.removeAttribute("srcdoc");
+          frame.src = page.file;
+        } else {
+          frame.srcdoc = placeholder(page.title);
+        }
+      })
+      .catch(function () {
+        frame.srcdoc = placeholder(page.title);
+      });
+  }
+
+  window.addEventListener("hashchange", function () {
+    show(location.hash.slice(1));
+  });
+  show(location.hash.slice(1) || "home");
+</script>
+</body>
+</html>
