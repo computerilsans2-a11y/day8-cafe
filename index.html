@@ -47,7 +47,27 @@
   nav a.active { background: var(--accent); color: #fff; font-weight: 700; }
   main { flex: 1; min-width: 0; }
   iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
+  main { position: relative; overflow-y: auto; }
+  #home { display: none; padding: 28px; max-width: 1000px; }
+  #home h1 { margin: 0 0 4px; font-size: 24px; }
+  #home .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .card .label { color: var(--muted); font-size: 14px; }
+  .card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+  .card .note { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .card.warn .value { color: #b3402a; }
+  .chart-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .chart-box h2 { margin: 0 0 16px; font-size: 17px; }
+  .chart { display: flex; align-items: flex-end; gap: 12px; height: 220px; padding-top: 24px; }
+  .bar-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
+  .bar-val { font-size: 12px; color: var(--muted); margin-bottom: 4px; white-space: nowrap; }
+  .bar { width: 100%; max-width: 56px; background: var(--accent); border-radius: 6px 6px 0 0; min-height: 2px; }
+  .bar-col.today .bar { background: var(--side); }
+  .bar-day { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .bar-col.today .bar-day { color: var(--text); font-weight: 700; }
   @media (max-width: 600px) {
+    #home { padding: 16px; }
     body { flex-direction: column; }
     nav { width: 100%; flex-direction: row; overflow-x: auto; padding: 8px; }
     .brand { display: none; }
@@ -65,11 +85,69 @@
   <a href="#promo" data-page="promo">홍보</a>
 </nav>
 <main>
+  <section id="home">
+    <h1>오늘의 가게</h1>
+    <p class="sub" id="today-label"></p>
+    <div class="cards" id="cards"></div>
+    <div class="chart-box">
+      <h2>최근 7일 매출</h2>
+      <div class="chart" id="chart"></div>
+    </div>
+  </section>
   <iframe id="frame" title="가운데 화면"></iframe>
 </main>
 
 <script>
-  // 메뉴 이름 → 열 파일. 홈은 2단계에서 만들 예정이라 아직 파일이 없다.
+  // ── 홈 화면 데이터 ──────────────────────────────────────
+  // 지금은 샘플 값이다. STEPS.md 4단계에서 Supabase의 sales 데이터로 바꾼다.
+  var HOME_DATA = {
+    cards: [
+      { label: "오늘 매출",     value: "₩ 184,000", note: "어제보다 +12%" },
+      { label: "오늘 판매 건수", value: "47건",      note: "아메리카노 21잔" },
+      { label: "재고 부족 메뉴", value: "3개",       note: "원두 · 우유 · 크루아상", warn: true },
+      { label: "새 리뷰",       value: "5개",       note: "답글 필요 2개" }
+    ],
+    week: [
+      { day: "월", amount: 142000 },
+      { day: "화", amount: 128000 },
+      { day: "수", amount: 156000 },
+      { day: "목", amount: 133000 },
+      { day: "금", amount: 201000 },
+      { day: "토", amount: 238000 },
+      { day: "일", amount: 184000 }   // 마지막 칸이 오늘
+    ]
+  };
+
+  var homeEl = document.getElementById("home");
+
+  function won(n) { return "₩" + n.toLocaleString("ko-KR"); }
+
+  function renderHome(data) {
+    var d = new Date();
+    var days = ["일", "월", "화", "수", "목", "금", "토"];
+    document.getElementById("today-label").textContent =
+      d.getFullYear() + "년 " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + days[d.getDay()] + ") · 샘플 숫자입니다";
+
+    document.getElementById("cards").innerHTML = data.cards.map(function (c) {
+      return '<div class="card' + (c.warn ? ' warn' : '') + '">' +
+        '<div class="label">' + c.label + '</div>' +
+        '<div class="value">' + c.value + '</div>' +
+        '<div class="note">' + c.note + '</div></div>';
+    }).join("");
+
+    var max = Math.max.apply(null, data.week.map(function (w) { return w.amount; })) || 1;
+    document.getElementById("chart").innerHTML = data.week.map(function (w, i) {
+      var h = Math.round(w.amount / max * 80);
+      var today = i === data.week.length - 1 ? " today" : "";
+      return '<div class="bar-col' + today + '">' +
+        '<div class="bar-val">' + won(w.amount) + '</div>' +
+        '<div class="bar" style="height:' + h + '%"></div>' +
+        '<div class="bar-day">' + w.day + '</div></div>';
+    }).join("");
+  }
+  renderHome(HOME_DATA);
+
+  // 메뉴 이름 → 열 파일. 홈은 위의 홈 화면이 직접 보여 준다.
   var PAGES = {
     home:    { title: "홈",   file: null },
     sales:   { title: "매출", file: "sales.html" },
@@ -98,11 +176,11 @@
     });
     document.title = page.title + " · 골목카페";
 
-    if (!page.file) {
-      frame.removeAttribute("src");
-      frame.srcdoc = placeholder(page.title);
-      return;
-    }
+    // 홈은 index.html 자체가 보여 주는 화면이라 iframe을 쓰지 않는다.
+    var isHome = key === "home";
+    homeEl.style.display = isHome ? "block" : "none";
+    frame.style.display = isHome ? "none" : "block";
+    if (isHome) { return; }
     // 파일이 있는지 먼저 확인하고, 없으면 "준비 중"을 보여 준다.
     fetch(page.file, { method: "HEAD" })
       .then(function (res) {
