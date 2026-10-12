@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>리뷰 · 골목카페</title>
+<style>
+  :root {
+    --bg: #fbf6ef;
+    --panel: #ffffff;
+    --side: #4a2f1f;
+    --side-text: #f3e6d6;
+    --accent: #c97b3c;
+    --text: #2d1f16;
+    --muted: #8a7566;
+    --line: #e8dccd;
+    --font: "Pretendard", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
+    --danger: #b3402a;
+    --good: #3f7d4e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg);
+  }
+  .wrap { max-width: 1000px; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+  #msg { min-height: 20px; margin: 0 0 12px; font-size: 14px; }
+  #msg.error { color: var(--danger); }
+
+  .review { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .stars { color: var(--accent); font-size: 17px; letter-spacing: 1px; }
+  .stars .off { color: var(--line); }
+  .date { color: var(--muted); font-size: 13px; }
+  .badge { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .badge.positive { color: var(--good); background: #e6f1e8; }
+  .badge.neutral  { color: var(--muted); background: #f1ebe2; }
+  .badge.negative { color: var(--danger); background: #f8e5e0; }
+  .head .spacer { flex: 1; }
+  .content { margin: 0 0 12px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
+
+  .reply-box { border-top: 1px dashed var(--line); padding-top: 12px; }
+  .reply-box label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  textarea {
+    width: 100%; min-height: 84px; resize: vertical;
+    font: inherit; color: var(--text); line-height: 1.5;
+    padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .status { color: var(--muted); font-size: 13px; }
+  button {
+    font: inherit; font-weight: 700; cursor: pointer;
+    padding: 9px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+  }
+  button.ghost { background: #fff; color: var(--text); border: 1px solid var(--line); }
+  button:disabled { opacity: .6; cursor: default; }
+  .empty { color: var(--muted); padding: 18px 8px; }
+
+  @media (max-width: 600px) {
+    body { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>리뷰</h1>
+  <p class="sub">"AI 분석"을 누르면 손님 감정을 읽고 사장님 답글 초안을 만들어 저장합니다. 답글은 고쳐서 다시 저장할 수 있어요.</p>
+  <p id="msg"></p>
+  <div id="list"></div>
+  <div id="empty" class="empty" style="display:none">아직 리뷰가 없습니다.</div>
+</div>
+
+<script>
+  var SUPABASE_URL = "https://aygdylhsmzevjrybnozf.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_EHyev6fOsOQbrASk6X79vw_uJh4dKcY";
+  var AI_URL = SUPABASE_URL + "/functions/v1/cafe-ai";
+
+  var SENTIMENT_LABEL = { positive: "좋음", neutral: "보통", negative: "아쉬움" };
+
+  // 왼쪽 메뉴(index.html)에서 고른 AI 모델. 고른 적이 없으면 그 메뉴의 기본값과 같은 모델을 쓴다.
+  var DEFAULT_MODEL = "google/gemma-4-31b-it:free";
+  function selectedModel() {
+    try { return localStorage.getItem("cafe-ai-model") || DEFAULT_MODEL; } catch (e) { return DEFAULT_MODEL; }
+  }
+
+  var listEl = document.getElementById("list");
+  var emptyEl = document.getElementById("empty");
+  var msgEl = document.getElementById("msg");
+
+  function headers() {
+    return {
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + SUPABASE_KEY,
+      "Content-Type": "application/json"
+    };
+  }
+
+  // 응답을 JSON으로 읽고, 실패하면 서버가 보낸 안내 문구를 오류로 던진다.
+  function readJson(res) {
+    return res.text().then(function (t) {
+      var data = null;
+      try { data = t ? JSON.parse(t) : null; } catch (e) { data = null; }
+      if (!res.ok) {
+        throw new Error((data && (data.error || data.message)) || t || res.statusText);
+      }
+      return data;
+    });
+  }
+
+  function db(path, options) {
+    options = options || {};
+    options.headers = Object.assign(headers(), options.headers || {});
+    return fetch(SUPABASE_URL + "/rest/v1/" + path, options).then(readJson);
+  }
+
+  function say(text, isError) {
+    msgEl.textContent = text || "";
+    msgEl.className = isError ? "error" : "";
+  }
+
+  function el(tag, props, children) {
+    var e = document.createElement(tag);
+    Object.keys(props || {}).forEach(function (k) { e[k] = props[k]; });
+    (children || []).forEach(function (c) { e.appendChild(c); });
+    return e;
+  }
+
+  function formatDate(iso) {
+    var d = new Date(iso);
+    return d.getFullYear() + "." + (d.getMonth() + 1) + "." + d.getDate() + " " +
+      ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+  }
+
+  function stars(n) {
+    var box = el("span", { className: "stars", title: "별점 " + n + "점" });
+    for (var i = 1; i <= 5; i++) {
+      box.appendChild(el("span", { className: i <= n ? "" : "off", textContent: "★" }));
+    }
+    return box;
+  }
+
+  function renderReview(r) {
+    var card = el("div", { className: "review" });
+
+    var badge = el("span", { className: "badge" });
+    function showBadge() {
+      if (r.sentiment && SENTIMENT_LABEL[r.sentiment]) {
+        badge.className = "badge " + r.sentiment;
+        badge.textContent = SENTIMENT_LABEL[r.sentiment];
+        badge.style.display = "";
+      } else {
+        badge.style.display = "none";
+      }
+    }
+    showBadge();
+
+    var aiBtn = el("button", { type: "button", textContent: r.reply ? "다시 분석" : "AI 분석" });
+    var head = el("div", { className: "head" }, [
+      stars(r.rating),
+      el("span", { className: "date", textContent: formatDate(r.written_at) }),
+      badge,
+      el("span", { className: "spacer" }),
+      aiBtn
+    ]);
+
+    var content = el("p", { className: "content", textContent: r.content });
+
+    var textarea = el("textarea", { placeholder: "AI 분석을 누르면 답글 초안이 여기에 들어옵니다." });
+    textarea.value = r.reply || "";
+    var status = el("span", { className: "status" });
+    var saveBtn = el("button", { type: "button", className: "ghost", textContent: "답글 저장" });
+    var replyBox = el("div", { className: "reply-box" }, [
+      el("label", { textContent: "사장님 답글" }),
+      textarea,
+      el("div", { className: "row" }, [saveBtn, status])
+    ]);
+
+    card.appendChild(head);
+    card.appendChild(content);
+    card.appendChild(replyBox);
+
+    function flash(text) {
+      status.textContent = text;
+      if (text) { setTimeout(function () { status.textContent = ""; }, 2000); }
+    }
+
+    function save(fields) {
+      return db("reviews?id=eq." + r.id, {
+        method: "PATCH",
+        headers: { "Prefer": "return=minimal" },
+        body: JSON.stringify(fields)
+      });
+    }
+
+    aiBtn.addEventListener("click", function () {
+      aiBtn.disabled = true;
+      var before = aiBtn.textContent;
+      aiBtn.textContent = "분석 중…";
+      status.textContent = "AI가 읽는 중이에요. 최대 1분쯤 걸릴 수 있어요.";
+      say("");
+
+      fetch(AI_URL, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ type: "review", rating: r.rating, content: r.content, model: selectedModel() })
+      }).then(readJson).then(function (ai) {
+        if (!SENTIMENT_LABEL[ai.sentiment_code] || !ai.reply) {
+          throw new Error("AI 응답 형식이 올바르지 않아요.");
+        }
+        return save({ sentiment: ai.sentiment_code, reply: ai.reply }).then(function () {
+          r.sentiment = ai.sentiment_code;
+          r.reply = ai.reply;
+          textarea.value = ai.reply;
+          showBadge();
+          aiBtn.textContent = "다시 분석";
+          flash("분석 결과를 저장했습니다. (" + ai.model + ")");
+        });
+      }).catch(function (err) {
+        aiBtn.textContent = before;
+        status.textContent = "";
+        say("AI 분석에 실패했습니다: " + err.message, true);
+      }).then(function () {
+        aiBtn.disabled = false;
+      });
+    });
+
+    saveBtn.addEventListener("click", function () {
+      var reply = textarea.value.trim();
+      saveBtn.disabled = true;
+      save({ reply: reply || null }).then(function () {
+        r.reply = reply || null;
+        textarea.value = reply;
+        aiBtn.textContent = r.reply ? "다시 분석" : "AI 분석";
+        flash("답글을 저장했습니다.");
+      }).catch(function (err) {
+        say("답글을 저장하지 못했습니다: " + err.message, true);
+      }).then(function () {
+        saveBtn.disabled = false;
+      });
+    });
+
+    return card;
+  }
+
+  function load() {
+    return db("reviews?select=*&order=written_at.desc").then(function (list) {
+      listEl.innerHTML = "";
+      list.forEach(function (r) { listEl.appendChild(renderReview(r)); });
+      emptyEl.style.display = list.length ? "none" : "block";
+    }).catch(function (err) {
+      say("리뷰를 불러오지 못했습니다: " + err.message, true);
+    });
+  }
+
+  load();
+</script>
+</body>
+</html>

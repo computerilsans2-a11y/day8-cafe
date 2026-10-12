@@ -45,6 +45,14 @@
   }
   nav a:hover { background: rgba(255,255,255,0.1); }
   nav a.active { background: var(--accent); color: #fff; font-weight: 700; }
+  .ai-model { margin-top: auto; padding: 14px 12px 4px; border-top: 1px solid rgba(255,255,255,0.15); }
+  .ai-model label { display: block; font-size: 12px; color: var(--side-text); opacity: .75; margin-bottom: 6px; }
+  .ai-model select {
+    width: 100%; font: inherit; font-size: 13px; color: var(--text);
+    padding: 8px; border: 0; border-radius: 6px; background: #fff;
+  }
+  .ai-model select:focus { outline: 2px solid var(--accent); }
+  .ai-model .hint { margin-top: 6px; font-size: 11px; color: var(--side-text); opacity: .6; line-height: 1.4; }
   main { flex: 1; min-width: 0; }
   iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
   main { position: relative; overflow-y: auto; }
@@ -83,6 +91,16 @@
   <a href="#menu" data-page="menu">메뉴</a>
   <a href="#reviews" data-page="reviews">리뷰</a>
   <a href="#promo" data-page="promo">홍보</a>
+  <div class="ai-model">
+    <label for="ai-model">AI 모델</label>
+    <select id="ai-model">
+      <option value="google/gemma-4-31b-it:free">Gemma 4 31B (기본)</option>
+      <option value="nvidia/nemotron-3-ultra-550b-a55b:free">Nemotron 3 Ultra 550B</option>
+      <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B</option>
+      <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">Nemotron 3 Nano 30B</option>
+    </select>
+    <div class="hint">고른 모델을 먼저 쓰고, 안 되면 다른 모델로 자동으로 넘어가요.</div>
+  </div>
 </nav>
 <main>
   <section id="home">
@@ -263,6 +281,18 @@
         frame.srcdoc = placeholder(page.title);
       });
   }
+
+  // 고른 AI 모델은 브라우저에 기억해 두고, 리뷰·홍보 화면이 AI를 부를 때 꺼내 쓴다.
+  var MODEL_KEY = "cafe-ai-model";
+  var modelSel = document.getElementById("ai-model");
+  try {
+    var savedModel = localStorage.getItem(MODEL_KEY);
+    var known = Array.prototype.some.call(modelSel.options, function (o) { return o.value === savedModel; });
+    if (known) { modelSel.value = savedModel; }
+  } catch (e) { /* 저장소를 못 써도 기본 모델로 동작한다 */ }
+  modelSel.addEventListener("change", function () {
+    try { localStorage.setItem(MODEL_KEY, modelSel.value); } catch (e) { /* 무시 */ }
+  });
 
   window.addEventListener("hashchange", function () {
     show(location.hash.slice(1));
